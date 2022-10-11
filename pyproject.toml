@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "fastapi-todo-webhook"
+version = "0.1.0"
+description = ""
+authors = ["Abdulazeez Abdulazeez Adeshina <31009679+Youngestdev@users.noreply.github.com>"]
+readme = "README.md"
+packages = [{include = "fastapi_todo_webhook"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+uvicorn = "^0.18.3"
+fastapi = "^0.85.0"
+requests = "^2.28.1"
+python-dotenv = "^0.21.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

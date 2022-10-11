@@ -37,5 +37,6 @@ Events are emitted to the Convoy incoming project by the `send_webhook_event(eve
 
 # TODO
 
+[ ] Restructure application: move events to different file, create dataclasses.
 [ ] Add HMAC signature
 [ ] Rewrite README once blogpost is ready.

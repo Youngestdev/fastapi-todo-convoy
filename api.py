@@ -1,66 +1,34 @@
-from typing import Dict
 from convoy import Convoy
-from dataclasses import dataclass
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 
-import requests
-import json
-
+from events import events
 from config import Settings
+from model import WebhookData
 
 app = FastAPI()
 config = Settings()
 
 todos = []
+
 webhook_receiver = config.WEBHOOK_RECEIVER_URL
 convoy = Convoy({"api_key": config.CONVOY_API_KEY})
-
-
-events = {
-    "ping": {
-        "event": "ping",
-        "description": "Webhook test from application."
-    },
-    "created": {
-        "event": "todo.created",
-        "description": "Todo created successfully"
-    },
-    "retrieved": {
-        "event": "todo.retrieved",
-        "description": "Todo retrieved successfully"
-    },
-    "updated": {
-        "event": "todo.updated",
-        "description": "Todo updated successfully"
-    },
-    "deleted": {
-        "event": "todo.deleted",
-        "description": "Todo deleted successfully"
-    },
-    "failed": {
-        "event": "todo.failure",
-        "description": "Todo not found."
-    }
-}
+app_id = config.CONVOY_APP_ID
 
 def send_webhook_event(event_type: str):
     
     event = {
+        "app_id": app_id,
         "event_type": event_type,
         "data": events[event_type]
     }
     
-    request = requests.post(webhook_receiver, data=json.dumps(event), headers={
-        "Content-type": "application/json"
-    })
-    return
+    (res, err) = convoy.event.create({}, event)
+    return res
 
 @app.get("/")
 async def ping():
     send_webhook_event("ping")
     return {"message": "Wilkomen!"}
-
-
 
 @app.get("/todo", tags=["todos"])
 async def get_todos() -> dict:
@@ -107,28 +75,8 @@ async def delete_todo(id: int) -> dict:
         "data": f"Todo with id {id} not found."
     }
     
+# Endpoint for event deliveries.
     
-@dataclass
-class WebhookData:
-    event_type: str
-    data: Dict[str, str]    
-
-@app.post("/event")
-async def receive_event(request: Request):
-    payload = await request.body()
-    print("Payload: ", payload)
-    # return {
-    #     "Received: ", 
-    # }
-
-
-@app.get("/pong")
-async def emit_event():
-    data = {
-        "app_id": "0436adbf-e8ab-4772-996e-0967bdf7b564",
-        "event_type": "ping",
-        "data": events["ping"]
-    }
-    (res, err) = convoy.event.create({}, data)
-    print("Response: ", res)
-    # c7e5337e-f4ac-4367-a08e-6df1d9e18861
+@app.post("/event", response_model=WebhookData)
+async def receive_event(event: WebhookData):
+    return event

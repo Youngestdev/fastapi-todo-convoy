@@ -1,42 +1,49 @@
-from fastapi import FastAPI
+from typing import Dict
+from convoy import Convoy
+from dataclasses import dataclass
+from fastapi import FastAPI, Request
+
 import requests
 import json
 
 from config import Settings
 
 app = FastAPI()
+config = Settings()
 
 todos = []
-webhook_receiver = Settings().WEBHOOK_RECEIVER_URL
+webhook_receiver = config.WEBHOOK_RECEIVER_URL
+convoy = Convoy({"api_key": config.CONVOY_API_KEY})
 
+
+events = {
+    "ping": {
+        "event": "ping",
+        "description": "Webhook test from application."
+    },
+    "created": {
+        "event": "todo.created",
+        "description": "Todo created successfully"
+    },
+    "retrieved": {
+        "event": "todo.retrieved",
+        "description": "Todo retrieved successfully"
+    },
+    "updated": {
+        "event": "todo.updated",
+        "description": "Todo updated successfully"
+    },
+    "deleted": {
+        "event": "todo.deleted",
+        "description": "Todo deleted successfully"
+    },
+    "failed": {
+        "event": "todo.failure",
+        "description": "Todo not found."
+    }
+}
 
 def send_webhook_event(event_type: str):
-    events = {
-        "ping": {
-            "event": "ping",
-            "description": "Webhook test from application."
-        },
-        "created": {
-            "event": "todo.created",
-            "description": "Todo created successfully"
-        },
-        "retrieved": {
-            "event": "todo.retrieved",
-            "description": "Todo retrieved successfully"
-        },
-        "updated": {
-            "event": "todo.updated",
-            "description": "Todo updated successfully"
-        },
-        "deleted": {
-            "event": "todo.deleted",
-            "description": "Todo deleted successfully"
-        },
-        "failed": {
-            "event": "todo.failure",
-            "description": "Todo not found."
-        }
-    }
     
     event = {
         "event_type": event_type,
@@ -99,3 +106,29 @@ async def delete_todo(id: int) -> dict:
     return {
         "data": f"Todo with id {id} not found."
     }
+    
+    
+@dataclass
+class WebhookData:
+    event_type: str
+    data: Dict[str, str]    
+
+@app.post("/event")
+async def receive_event(request: Request):
+    payload = await request.body()
+    print("Payload: ", payload)
+    # return {
+    #     "Received: ", 
+    # }
+
+
+@app.get("/pong")
+async def emit_event():
+    data = {
+        "app_id": "0436adbf-e8ab-4772-996e-0967bdf7b564",
+        "event_type": "ping",
+        "data": events["ping"]
+    }
+    (res, err) = convoy.event.create({}, data)
+    print("Response: ", res)
+    # c7e5337e-f4ac-4367-a08e-6df1d9e18861
